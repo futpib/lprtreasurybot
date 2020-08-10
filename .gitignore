@@ -123,3 +123,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# ignores
+config.json
+test.py
+..gitignore.kate-swp
+data.json
