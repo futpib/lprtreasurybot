@@ -6,6 +6,7 @@ import re
 import ujson
 from PIL import Image, ImageDraw, ImageFont
 import os
+from motor_client import SingletonClient
 
 
 def get_from_config(value: str) -> str:
@@ -182,7 +183,7 @@ async def get_list_funds() -> str:
     return string
 
 
-def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> str:
+async def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> str:
     """
     Метод возвращает строку, которая содержит топ 5 донатеров
     :return:
@@ -190,25 +191,31 @@ def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> str:
 
     year = '20' + year
 
-    with open('data.json', 'r', encoding='utf-8') as f:
-        data = ujson.load(f)
+    # Сделать импорт нужных данных из монго
+    db = await SingletonClient.get_data_base()
+    collection = await db.data_collection
     
-    try:
-        contributions = data.get(year).get(month)
-        if contributions is None:
-            return None
-    except AttributeError:
+    cursor = collection.find({
+        "date": {
+            "$gte": str(datetime.strptime("01 {} {}".format(month, year), "%d %m %Y")),
+            "$lte": str(datetime.strptime("31 {} {}".format(month, year), "%d %m %Y"))
+        }
+    })
+    
+    contributions = await cursor.to_list(length=await collection.count_documents({}))
+    
+    if not contributions:
         return None
-
+    
     dct = {}
 
     if contributions:
         for i in contributions:
-            if float(i[6].replace(',', '.')) > 0 and i[4] != 'Техническая':
-                if dct.get(i[0]):
-                    dct[i[0]] += float(i[6].replace(',', '.'))
+            if i['total'] > 0 and i['comment'] != 'Техническая':
+                if dct.get(i['total']):
+                    dct[i['from']] += i['total']
                 else:
-                    dct.update({i[0]: float(i[6].replace(',', '.'))})
+                    dct.update({i['from']: i['total']})
     
     list_d = list(dct.items())
     list_d.sort(key=lambda i: i[1], reverse=True)
@@ -243,28 +250,36 @@ def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> str:
 async def update_data():
     _data = await get_from_excel("Транзакции", "A1", "K10000")
     _data = _data['values'][1:]
+    
     _lst = []
+    list_of_rows = []
     for i in range(len(_data)):
         if not (bool(_data[i][0]) and bool(_data[i][5]) and bool(_data[i][6])):
             _lst.append(i)
-
-    _lst.reverse()
-    for i in _lst:
-        _data.pop(i)
-
-    dct = {}
-
-    for value in _data:
-        month = value[5].split('.')[1]
-        year = value[5].split('.')[2]
-        if dct.get(year):
-            if dct.get(year).get(month):
-                dct[year][month].append(value)
-            else:
-                dct[year][month] = [value]
         else:
-            dct[year] = {}
-            dct[year][month] = [value]
+            row_dict = {"from": _data[i][0]}
+            row_dict.update({"total_currency": float(_data[i][1].replace(',', '.'))})
+            row_dict.update({"currency_name": _data[i][2]})
+            row_dict.update({"fund": _data[i][3]})
+            row_dict.update({"comment": _data[i][4]})
+            row_dict.update({"date": str(datetime.strptime(_data[i][5], "%d.%m.%Y"))})
+            row_dict.update({"total": float(_data[i][6].replace(',', '.'))})
+            row_dict.update({"currency": float(_data[i][7].replace(',', '.'))})
+            if _data[i][8] == "TRUE":
+                row_dict.update({"taxFree": True})
+            else:
+                row_dict.update({"taxFree": False})
+            row_dict.update({"treasuryBalance": float(_data[i][10].replace(',', '.'))})
+
+            list_of_rows.append(row_dict)
     
-    with open('data.json', 'w', encoding='utf-8') as f:
-        ujson.dump(dct, f, ensure_ascii=False, indent=4)
+    db = await SingletonClient.get_data_base()
+    collection = await db.data_collection
+    
+    # Удаляются все данные из коллекции
+    delete_result = await collection.delete_many({})
+    # логировать result
+    
+    # Таблица заполняется обновленным данными
+    insert_result = await collection.insert_many(list_of_rows)
+    # логировать result
