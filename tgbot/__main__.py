@@ -3,6 +3,8 @@ from bot import dp
 from aiogram import executor
 from datetime import datetime
 import asyncio
+from bot.modules.send_treasury_update.SendTreasuryUpdate import send_treasury_update
+
 
 async def treasury_updates_waiter():
     today = datetime.strftime(datetime.today(), '%d.%m.%Y')
@@ -14,9 +16,9 @@ async def treasury_updates_waiter():
     
     await asyncio.sleep(monday_timestamp - datetime.timestamp(datetime.now()))
 
-    pass
+    await send_treasury_update(_monday_date, monday_date)
 
 
 if __name__ == "__main__":
-    loop.create_task()
+    loop.create_task(treasury_updates_waiter())
     executor.start_polling(dp, loop=loop, skip_updates=True)

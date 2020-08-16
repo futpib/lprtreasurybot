@@ -131,3 +131,6 @@ test.py
 data.json
 .vscode
 
+tgbot/assets/fund_default*.png
+mongodb/data
+docker-compose.creds.yml
