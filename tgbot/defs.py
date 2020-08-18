@@ -87,10 +87,12 @@ def fund_string(just_sum: int, fund_name: str, goal=0) -> str:
     :param goal:
     :return:
     """
-    string = 'Состояние фонда <b>{}</b>: \n<b>{}</b> ₽\n'.format(fund_name, beauty_sum(just_sum))
+    string = 'Состояние фонда <b>{}</b>: \n<b>{}</b> ₽\n'.format(
+        fund_name, beauty_sum(just_sum))
     if goal != 0:
         string += 'Осталось собрать: \n<b>{}</b> ₽\nПрогресс: [{}{}]'.format(beauty_sum(goal - just_sum),
-                                                                             int(just_sum // (goal / 10)) * '●',
+                                                                             int(just_sum //
+                                                                                 (goal / 10)) * '●',
                                                                              int(10 - just_sum // (goal / 10)) * '○')
     return string
 
@@ -128,8 +130,10 @@ def get_fund_image(just_sum: int, fund_name: str, goal: int) -> str:
     fund_name = fund_name[0].upper() + fund_name[1:]
     draw.text((22, 40), fund_name, fill='#ffffff', font=font_title)
 
-    draw.text((22, 157), beauty_sum(just_sum), fill='#ffffff', font=font_digitals)
-    draw.text((355, 157), beauty_sum(goal) + '₽', fill='#ffffff', font=font_digitals)
+    draw.text((22, 157), beauty_sum(just_sum),
+              fill='#ffffff', font=font_digitals)
+    draw.text((355, 157), beauty_sum(goal) + '₽',
+              fill='#ffffff', font=font_digitals)
 
     # Отрисовка прогресс бара
     width = 16 + int(just_sum / goal * 467)
@@ -154,7 +158,8 @@ async def fund_sum(fund_title: str) -> [int, int]:
 
     fund_title = '#' + fund_title
     try:
-        numb = [val[0] for val in resp_json].index(fund_title)  # Поиск номера фонда из списка фондов с целями
+        # Поиск номера фонда из списка фондов с целями
+        numb = [val[0] for val in resp_json].index(fund_title)
         fund = int(resp_json[numb][2])  # Количество денег в фонде, int
         fund_goal = int(float(resp_json[numb][4]))  # Цель сбора у фонда, int
         return [fund, fund_goal]
@@ -166,7 +171,8 @@ async def fund_sum(fund_title: str) -> [int, int]:
 
         resp_json = resp_json['values']
         try:
-            numb = [val[1] for val in resp_json].index(fund_title)  # Поиск номера фонда во всех фондах
+            numb = [val[1] for val in resp_json].index(
+                fund_title)  # Поиск номера фонда во всех фондах
         except ValueError:
             return None
         fund = int(resp_json[numb][0])  # Количество денег в фонде
@@ -203,11 +209,12 @@ async def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> 
     if contributions:
         for i in contributions:
             if i['total'] > 0 and i['comment'] != 'Техническая':
-                if dct.get(i['total']):
+                if dct.get(i['from']):
                     dct[i['from']] += i['total']
                 else:
                     dct.update({i['from']: i['total']})
 
+    print(dct)
     list_d = list(dct.items())
     list_d.sort(key=lambda j: j[1], reverse=True)
     list_d = list_d[:10]
@@ -215,7 +222,8 @@ async def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> 
     string = f'Топ 10 жертвователей за {month}.{year}:\n'
 
     for i in range(len(list_d)):
-        string += '{}) {} - <b>{}</b> ₽\n'.format(i + 1, list_d[i][0], beauty_sum(list_d[i][1]))
+        string += '{}) {} - <b>{}</b> ₽\n'.format(
+            i + 1, list_d[i][0], beauty_sum(list_d[i][1]))
 
     return string
 
@@ -235,7 +243,8 @@ async def update_data():
             row_dict.update({"currency_name": _data[i][2]})
             row_dict.update({"fund": _data[i][3]})
             row_dict.update({"comment": _data[i][4]})
-            row_dict.update({"date": str(datetime.strptime(_data[i][5], "%d.%m.%Y"))})
+            row_dict.update(
+                {"date": str(datetime.strptime(_data[i][5], "%d.%m.%Y"))})
             row_dict.update({"total": _data[i][6]})
             row_dict.update({"currency": _data[i][7]})
             if _data[i][8] == "TRUE":
@@ -255,4 +264,5 @@ async def update_data():
 
     # Таблица заполняется обновленным данными
     insert_result = await collection.insert_many(list_of_rows)
-    print('Update data. Insert transactions = ' + str(insert_result.inserted_ids))
+    print('Update data. Insert transactions = ' +
+          str(insert_result.inserted_ids))
