@@ -238,7 +238,7 @@ async def update_data():
         if not (bool(_data[i][0]) and bool(_data[i][5]) and bool(_data[i][6])):
             _lst.append(i)
         else:
-            row_dict = {"from": _data[i][0]}
+            row_dict = {"from": _data[i][0].lower()}
             row_dict.update({"total_currency": _data[i][1]})
             row_dict.update({"currency_name": _data[i][2]})
             row_dict.update({"fund": _data[i][3]})
