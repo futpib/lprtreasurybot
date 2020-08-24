@@ -201,9 +201,6 @@ async def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> 
 
     contributions = await cursor.to_list(length=await collection.count_documents({}))
 
-    if not contributions:
-        return None
-
     dct = {}
 
     if contributions:
@@ -213,6 +210,8 @@ async def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> 
                     dct[i['from']] += i['total']
                 else:
                     dct.update({i['from']: i['total']})
+    else:
+        return None
 
     print(dct)
     list_d = list(dct.items())

@@ -11,3 +11,5 @@ from bot.modules import unsubscribe
 from bot.modules import rating
 
 from bot.modules import send_treasury_update
+
+from bot.modules import stats
