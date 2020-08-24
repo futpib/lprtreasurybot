@@ -1,60 +1,53 @@
-import aiohttp
-import time
-from loop import loop
-import re
-from PIL import Image, ImageDraw, ImageFont
+
 import os
-from motor_client import SingletonClient
+import time
+import re
+
+import aiohttp
 from datetime import datetime
 from calendar import monthrange
+from PIL import Image, ImageDraw, ImageFont
 
+from motor_client import SingletonClient
+from loop import loop
 
-url_all_funds = ("https://sheets.googleapis.com/v4/spreadsheets/1sRwkcvvYqPrHFpnEdkiEjkhd-j7obFX3KF4NI0AUu6Y/values/" +
-                 f"Состояние по фондам в рублях!A2:B28?key={os.environ['GOOGLE_SHEETS_API_KEY']}&" +
-                 "valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING")
+GOOGLE_SHEETS_API_KEY = os.environ['GOOGLE_SHEETS_API_KEY']
 
-url_with_goal_funds = ("https://sheets.googleapis.com/v4/spreadsheets/1sRwkcvvYqPrHFpnEdkiEjkhd-j7obFX3KF4NI0AUu6Y/" +
-                       f"values/Visual!A2:F3?key={os.environ['GOOGLE_SHEETS_API_KEY']}&" +
-                       "valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING")
+GOOGLE_SHEETS_BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets'
+GOOGLE_SHEETS_SPREADSHEET_ID = '1sRwkcvvYqPrHFpnEdkiEjkhd-j7obFX3KF4NI0AUu6Y'
 
-excel_url = [
-    "https://sheets.googleapis.com/v4/spreadsheets/",
-    "1sRwkcvvYqPrHFpnEdkiEjkhd-j7obFX3KF4NI0AUu6Y",
-    "/values/",
-    "sheet_title",
-    "!",
-    "from",
-    ":",
-    "to",
-    f"?key={os.environ['GOOGLE_SHEETS_API_KEY']}",
-    "&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING"
-]
+async def google_sheets_values(
+        sheet: str,
+        start: str = 'A1',
+        stop: str = 'ZZ99999',
+        value_render_option: str = 'UNFORMATTED_VALUE',
+        date_time_render_option: str = 'FORMATTED_STRING',
+) -> dict:
+    range_ = '!'.join([
+        sheet,
+        ':'.join([
+            start,
+            stop,
+        ]),
+    ])
 
+    url = '/'.join([
+        GOOGLE_SHEETS_BASE_URL,
+        GOOGLE_SHEETS_SPREADSHEET_ID,
+        'values',
+        range_,
+    ])
 
-async def get_from_excel(sheet_title: str, frm: str, to: str, url=None) -> dict:
-    """
-    Возвращает response от запроса к Excel таблице
-    :param url: ["https://sheets.googleapis.com/v4/spreadsheets/","sheet_id", "/values/", "sheet_title", "!","from",
-    ":", "to","?key=apikey&valueRenderOption=UNFORMATTED_VALUE"]
-    :param sheet_title: Название листа в эксель таблице
-    :param frm: С какой ячейки начинается
-    :param to: Какой ячейкой заканчивается
-    :return: 
-    """
-    if url is None:
-        url = excel_url
-    string = ''
-    here_url = url
-    here_url[3] = sheet_title
-    here_url[5] = frm
-    here_url[7] = to
-    for i in here_url:
-        string += i
+    params = {
+        'key': GOOGLE_SHEETS_API_KEY,
+        'valueRenderOption': value_render_option,
+        'dateTimeRenderOption': date_time_render_option,
+    }
 
     async with aiohttp.ClientSession(loop=loop) as session:
-        async with session.get(string) as resp:
-            return await resp.json()
-
+        async with session.get(url, params=params) as response:
+            json = await response.json()
+            return json['values']
 
 def parse_command(text):
     pattern = r'\A/\w+'  # Для паттерна используется pythex.org
@@ -150,11 +143,7 @@ async def fund_sum(fund_title: str) -> [int, int]:
     :param fund_title:
     :return:
     """
-    async with aiohttp.ClientSession(loop=loop) as session:
-        async with session.get(url_with_goal_funds) as resp:
-            resp_json = await resp.json()
-
-    resp_json = resp_json['values']
+    resp_json = await google_sheets_values('Visual', 'A2')
 
     fund_title = '#' + fund_title
     try:
@@ -165,11 +154,8 @@ async def fund_sum(fund_title: str) -> [int, int]:
         return [fund, fund_goal]
 
     except ValueError:
-        async with aiohttp.ClientSession(loop=loop) as session:
-            async with session.get(url_all_funds) as resp:
-                resp_json = await resp.json()
+        resp_json = await google_sheets_values('Состояние по фондам в рублях', 'A2')
 
-        resp_json = resp_json['values']
         try:
             numb = [val[1] for val in resp_json].index(
                 fund_title)  # Поиск номера фонда во всех фондах
@@ -228,8 +214,7 @@ async def rating_string(month=time.strftime("%m"), year=time.strftime("%y")) -> 
 
 
 async def update_data():
-    _data = await get_from_excel("Транзакции", "A1", "K10000")
-    _data = _data['values'][1:]
+    _data = await google_sheets_values('Транзакции', 'A2')
 
     _lst = []
     list_of_rows = []
