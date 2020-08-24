@@ -4,21 +4,21 @@ from datetime import datetime
 from motor_client import SingletonClient
 
 
-async def send_treasury_update(from_monday: datetime, to_monday: datetime):
+async def send_treasury_update():
     """
     Отправляет уведомление
     :return:
     """
     await update_data()
-    
+
     db = SingletonClient.get_data_base()
     collection = db.transactions
 
+    today = datetime.strftime(datetime.today(), '%d.%m.%Y')
+    today = datetime.strptime(today + ' 20:00', '%d.%m.%Y %H:%M')
+    from_monday = datetime.fromtimestamp(datetime.timestamp(today) - 604800)
     cursor = collection.find({
-        "date": {
-            "$gte": str(from_monday),
-            "$lte": str(to_monday)
-        }
+        "date": {"$gte": str(from_monday)}
     })
 
     week_data = await cursor.to_list(length=await collection.count_documents({}))
@@ -31,7 +31,7 @@ async def send_treasury_update(from_monday: datetime, to_monday: datetime):
     for data in week_data:
         string += '\n{name}: <b>{amount}</b> ₽ - фонд: {fund_name}\n'.format(
             name=data['from'], amount=beauty_sum(data['total']), fund_name=data['fund'])
-    
+
     for user in users:
         print("user: ")
         print(user)

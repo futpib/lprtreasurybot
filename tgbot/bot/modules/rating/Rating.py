@@ -5,7 +5,7 @@ import re
 
 
 async def get_string(message: types.Message) -> str:
-    
+
     try:
         # Проверка сообщения на соответствие с стандартом "month.year"
         pattern = r'((0[1-9]|1[0-2])\.([0-9]\d))'
@@ -26,7 +26,7 @@ async def get_string(message: types.Message) -> str:
 
 @dp.message_handler(commands=['rating'])
 async def rating(message: types.Message):
-    
+
     string = await get_string(message)
 
     # Если донаты есть, то строка существует
@@ -38,15 +38,15 @@ async def rating(message: types.Message):
         _string = await get_string(message)
         if string == _string:
             return None
-        
-        await _message.edit_text(_string, parse_mode='HTML')    
-        return None    
+
+        await _message.edit_text(_string, parse_mode='HTML')
+        return None
 
     _message = await message.reply('Донатов за этот месяц еще не поступало :(')
-    
+
     await update_data()
     _string = await get_string(message)
     if string == _string:
         return None
-    
+
     await _message.edit_text(_string, parse_mode='HTML')

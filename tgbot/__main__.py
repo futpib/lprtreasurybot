@@ -12,11 +12,10 @@ async def treasury_updates_waiter():
     days_to_monday = 7 - datetime.today().weekday()
     monday_timestamp = datetime.timestamp(today) + (days_to_monday) * 86400
     monday_date = datetime.fromtimestamp(monday_timestamp)
-    _monday_date = datetime.fromtimestamp(monday_timestamp - 604800)
-    
+
     await asyncio.sleep(monday_timestamp - datetime.timestamp(datetime.now()))
 
-    await send_treasury_update(_monday_date, monday_date)
+    await send_treasury_update()
 
 
 if __name__ == "__main__":
