@@ -1,0 +1,1 @@
+from bot.modules.send_treasury_update import SendTreasuryUpdate

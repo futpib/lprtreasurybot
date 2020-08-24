@@ -1,0 +1,1 @@
+from bot.modules.funds import Funds
