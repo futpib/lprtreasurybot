@@ -16,6 +16,7 @@ GOOGLE_SHEETS_API_KEY = os.environ['GOOGLE_SHEETS_API_KEY']
 GOOGLE_SHEETS_BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets'
 GOOGLE_SHEETS_SPREADSHEET_ID = '1sRwkcvvYqPrHFpnEdkiEjkhd-j7obFX3KF4NI0AUu6Y'
 
+
 async def google_sheets_values(
         sheet: str,
         start: str = 'A1',
@@ -23,12 +24,10 @@ async def google_sheets_values(
         value_render_option: str = 'UNFORMATTED_VALUE',
         date_time_render_option: str = 'FORMATTED_STRING',
 ) -> dict:
+    
     range_ = '!'.join([
         sheet,
-        ':'.join([
-            start,
-            stop,
-        ]),
+        ':'.join([start, stop,]),
     ])
 
     url = '/'.join([
@@ -48,6 +47,7 @@ async def google_sheets_values(
         async with session.get(url, params=params) as response:
             json = await response.json()
             return json['values']
+
 
 def parse_command(text):
     pattern = r'\A/\w+'  # Для паттерна используется pythex.org
