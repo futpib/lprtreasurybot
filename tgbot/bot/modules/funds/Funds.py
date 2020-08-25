@@ -1,11 +1,10 @@
 from bot import dp, types
-from defs import get_from_excel, beauty_sum
+from defs import google_sheets_values, beauty_sum
 
 
 @dp.message_handler(commands=['funds'])
 async def funds(message: types.Message):
-    _funds = await get_from_excel('Состояние по фондам в рублях', 'A2', 'B1000')
-    _funds = _funds['values']
+    _funds = await google_sheets_values('Состояние по фондам в рублях', 'A2', 'B1000')
 
     _funds = [[i[0], i[1][1:]] for i in _funds if int(i[0]) != 0]
 
